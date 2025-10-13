@@ -26,19 +26,8 @@ export const useChat = () => {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with your actual API endpoint
-      const API_ENDPOINT = 'YOUR_XYZ_API_ENDPOINT_HERE';
-      
-      const response = await fetch(API_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: content,
-          // Add any other parameters your API needs
-        }),
-      });
+      // Using DummyJSON test API for preview - Replace with your actual API endpoint
+      const response = await fetch('https://dummyjson.com/products/1');
 
       if (!response.ok) {
         throw new Error('Failed to get response from API');
@@ -46,11 +35,11 @@ export const useChat = () => {
 
       const data = await response.json();
       
-      // Adjust this based on your API's response structure
+      // Mock AI response for testing - adjust this based on your actual API's response structure
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.response || data.output || data.text || 'No response',
+        content: `I received your message: "${content}"\n\nThis is a test response. Replace the API endpoint in src/hooks/useChat.ts with your actual xyz API URL.\n\nYour API should:\n- Accept POST requests with your prompt\n- Return the AI's response\n\nCurrent test data: ${data.title}`,
         timestamp: new Date(),
       };
 
