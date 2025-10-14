@@ -15,7 +15,7 @@ const Index = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isLoading]);
 
   return (
     <div className="flex h-screen flex-col bg-gradient-to-br from-background via-background to-muted">
@@ -65,21 +65,6 @@ const Index = () => {
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
-              {isLoading && (
-                <div className="flex gap-4 p-6 bg-muted/50 animate-fade-in">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-                    <Sparkles className="h-5 w-5 animate-pulse" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium mb-2">AI Assistant</p>
-                    <div className="flex gap-1">
-                      <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                      <div className="h-2 w-2 rounded-full bg-primary animate-pulse [animation-delay:0.2s]" />
-                      <div className="h-2 w-2 rounded-full bg-primary animate-pulse [animation-delay:0.4s]" />
-                    </div>
-                  </div>
-                </div>
-              )}
               <div ref={messagesEndRef} />
             </>
           )}
