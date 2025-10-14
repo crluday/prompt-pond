@@ -25,6 +25,17 @@ export const useChat = () => {
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
+    // Create assistant message placeholder
+    const assistantMessageId = (Date.now() + 1).toString();
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+    };
+    
+    setMessages(prev => [...prev, assistantMessage]);
+
     try {
       // Build messages array for API
       const apiMessages = [...messages, userMessage].map(msg => ({
@@ -42,7 +53,7 @@ export const useChat = () => {
           messages: apiMessages,
           temperature: 0.7,
           max_tokens: -1,
-          stream: false,
+          stream: true, // Enable streaming
         }),
       });
 
@@ -50,17 +61,52 @@ export const useChat = () => {
         throw new Error('Failed to get response from API');
       }
 
-      const data = await response.json();
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
       
-      // Parse response from OpenAI-compatible API format
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.choices?.[0]?.message?.content || 'No response',
-        timestamp: new Date(),
-      };
+      if (!reader) {
+        throw new Error('No reader available');
+      }
 
-      setMessages(prev => [...prev, assistantMessage]);
+      let accumulatedContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content || '';
+              
+              if (content) {
+                accumulatedContent += content;
+                
+                // Update the assistant message with accumulated content
+                setMessages(prev => 
+                  prev.map(msg => 
+                    msg.id === assistantMessageId
+                      ? { ...msg, content: accumulatedContent }
+                      : msg
+                  )
+                );
+              }
+            } catch (e) {
+              // Skip invalid JSON chunks
+              console.warn('Failed to parse chunk:', e);
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -68,6 +114,9 @@ export const useChat = () => {
         description: 'Failed to get response from the API. Please check your endpoint configuration.',
         variant: 'destructive',
       });
+      
+      // Remove the failed assistant message
+      setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
     } finally {
       setIsLoading(false);
     }
