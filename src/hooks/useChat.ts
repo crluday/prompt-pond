@@ -6,6 +6,7 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  isStreaming?: boolean;
 }
 
 export const useChat = () => {
@@ -16,22 +17,22 @@ export const useChat = () => {
     if (!content.trim()) return;
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: Date.now().toString() + Math.random(),
       role: 'user',
       content: content.trim(),
       timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
 
-    // Create assistant message placeholder
-    const assistantMessageId = (Date.now() + 1).toString();
+    // Create assistant message placeholder with unique ID
+    const assistantMessageId = Date.now().toString() + Math.random() + '_assistant';
     const assistantMessage: Message = {
       id: assistantMessageId,
       role: 'assistant',
       content: '',
       timestamp: new Date(),
+      isStreaming: true,
     };
     
     setMessages(prev => [...prev, assistantMessage]);
@@ -95,7 +96,7 @@ export const useChat = () => {
                 setMessages(prev => 
                   prev.map(msg => 
                     msg.id === assistantMessageId
-                      ? { ...msg, content: accumulatedContent }
+                      ? { ...msg, content: accumulatedContent, isStreaming: true }
                       : msg
                   )
                 );
@@ -107,6 +108,15 @@ export const useChat = () => {
           }
         }
       }
+      
+      // Mark streaming as complete
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === assistantMessageId
+            ? { ...msg, isStreaming: false }
+            : msg
+        )
+      );
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -117,8 +127,6 @@ export const useChat = () => {
       
       // Remove the failed assistant message
       setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
-    } finally {
-      setIsLoading(false);
     }
   };
 

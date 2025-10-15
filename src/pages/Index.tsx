@@ -72,7 +72,7 @@ const Index = () => {
       </div>
 
       {/* Input */}
-      <ChatInput onSend={sendMessage} disabled={isLoading} />
+      <ChatInput onSend={sendMessage} disabled={false} />
     </div>
   );
 };
