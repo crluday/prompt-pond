@@ -1,6 +1,10 @@
 import { Message } from '@/hooks/useChat';
 import { Bot, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface ChatMessageProps {
   message: Message;
@@ -31,7 +35,30 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
           {isUser ? 'You' : 'AI Assistant'}
         </p>
         <div className="prose prose-sm max-w-none dark:prose-invert">
-          <p className="whitespace-pre-wrap text-foreground">{message.content}</p>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              code({ node, inline, className, children, ...props }: any) {
+                const match = /language-(\w+)/.exec(className || '');
+                return !inline && match ? (
+                  <SyntaxHighlighter
+                    style={oneDark}
+                    language={match[1]}
+                    PreTag="div"
+                    {...props}
+                  >
+                    {String(children).replace(/\n$/, '')}
+                  </SyntaxHighlighter>
+                ) : (
+                  <code className={cn('bg-muted px-1 py-0.5 rounded text-sm', className)} {...props}>
+                    {children}
+                  </code>
+                );
+              },
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
         </div>
       </div>
     </div>
