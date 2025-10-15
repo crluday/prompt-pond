@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send } from 'lucide-react';
+import { Send, StopCircle } from 'lucide-react';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
+  onStop?: () => void;
   disabled?: boolean;
+  isStreaming?: boolean;
 }
 
-export const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
+export const ChatInput = ({ onSend, onStop, disabled, isStreaming }: ChatInputProps) => {
   const [input, setInput] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -37,14 +39,26 @@ export const ChatInput = ({ onSend, disabled }: ChatInputProps) => {
           disabled={disabled}
           className="min-h-[60px] max-h-[200px] resize-none"
         />
-        <Button
-          type="submit"
-          size="icon"
-          disabled={!input.trim() || disabled}
-          className="h-[60px] w-[60px] shrink-0"
-        >
-          <Send className="h-5 w-5" />
-        </Button>
+        {isStreaming ? (
+          <Button
+            type="button"
+            size="icon"
+            onClick={onStop}
+            variant="destructive"
+            className="h-[60px] w-[60px] shrink-0"
+          >
+            <StopCircle className="h-5 w-5" />
+          </Button>
+        ) : (
+          <Button
+            type="submit"
+            size="icon"
+            disabled={!input.trim() || disabled}
+            className="h-[60px] w-[60px] shrink-0"
+          >
+            <Send className="h-5 w-5" />
+          </Button>
+        )}
       </div>
     </form>
   );

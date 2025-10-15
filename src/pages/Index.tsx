@@ -6,7 +6,7 @@ import { Trash2, Sparkles } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
 const Index = () => {
-  const { messages, isLoading, sendMessage, clearMessages } = useChat();
+  const { messages, isLoading, isStreaming, sendMessage, stopGeneration, clearMessages } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -72,7 +72,12 @@ const Index = () => {
       </div>
 
       {/* Input */}
-      <ChatInput onSend={sendMessage} disabled={false} />
+      <ChatInput 
+        onSend={sendMessage} 
+        onStop={stopGeneration}
+        isStreaming={isStreaming}
+        disabled={false} 
+      />
     </div>
   );
 };

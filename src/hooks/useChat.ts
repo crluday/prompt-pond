@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { toast } from '@/hooks/use-toast';
 
 export interface Message {
@@ -12,6 +12,7 @@ export interface Message {
 export const useChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const sendMessage = async (content: string) => {
     if (!content.trim()) return;
@@ -38,6 +39,9 @@ export const useChat = () => {
     setMessages(prev => [...prev, assistantMessage]);
 
     try {
+      // Create new AbortController for this request
+      abortControllerRef.current = new AbortController();
+
       // Build messages array for API - only include completed messages
       const apiMessages = [...messages, userMessage]
         .filter(msg => msg.role === 'user' || (!msg.isStreaming && msg.content.trim()))
@@ -58,6 +62,7 @@ export const useChat = () => {
           max_tokens: -1,
           stream: true, // Enable streaming
         }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) {
@@ -119,16 +124,37 @@ export const useChat = () => {
             : msg
         )
       );
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to get response from the API. Please check your endpoint configuration.',
-        variant: 'destructive',
-      });
-      
-      // Remove the failed assistant message
-      setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
+    } catch (error: any) {
+      // Don't show error toast if request was aborted by user
+      if (error.name === 'AbortError') {
+        console.log('Request aborted by user');
+        // Mark the message as complete even though it was aborted
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === assistantMessageId
+              ? { ...msg, isStreaming: false }
+              : msg
+          )
+        );
+      } else {
+        console.error('Error sending message:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to get response from the API. Please check your endpoint configuration.',
+          variant: 'destructive',
+        });
+        
+        // Remove the failed assistant message
+        setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
+      }
+    } finally {
+      abortControllerRef.current = null;
+    }
+  };
+
+  const stopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
   };
 
@@ -136,10 +162,14 @@ export const useChat = () => {
     setMessages([]);
   };
 
+  const isStreaming = messages.some(msg => msg.isStreaming);
+
   return {
     messages,
     isLoading,
+    isStreaming,
     sendMessage,
+    stopGeneration,
     clearMessages,
   };
 };
