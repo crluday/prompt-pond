@@ -38,11 +38,13 @@ export const useChat = () => {
     setMessages(prev => [...prev, assistantMessage]);
 
     try {
-      // Build messages array for API
-      const apiMessages = [...messages, userMessage].map(msg => ({
-        role: msg.role,
-        content: msg.content,
-      }));
+      // Build messages array for API - only include completed messages
+      const apiMessages = [...messages, userMessage]
+        .filter(msg => msg.role === 'user' || (!msg.isStreaming && msg.content.trim()))
+        .map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        }));
 
       const response = await fetch('http://192.168.11.146:1234/v1/chat/completions', {
         method: 'POST',
